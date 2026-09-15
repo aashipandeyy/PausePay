@@ -23,25 +23,22 @@ public class NightlyCategorizationJob {
     private final UserRepository userRepository;
     private final CategorizationService categorizationService;
 
-    // runs every night at 2am - picks up any transactions that failed to categorize during the day
+    // Recovery job for transactions that remain uncategorized after the Kafka pipeline.
     @Scheduled(cron = "0 0 2 * * *")
     public void categorizeUncategorized() {
         log.info("Nightly categorization job started");
 
         userRepository.findAll().forEach(user -> {
             List<Transaction> uncategorized = transactionRepository
-                    .findByCategoryAndBankAccountUserId(
-                            Category.UNCATEGORIZED.name(), user.getId());
+                    .findByCategoryAndBankAccountUserId(Category.UNCATEGORIZED.name(), user.getId());
 
-            log.info("Found {} uncategorized transactions for user {}",
-                    uncategorized.size(), user.getId());
+            log.info("Found {} uncategorized transactions for user {}", uncategorized.size(), user.getId());
 
             uncategorized.forEach(transaction -> {
-                categorizationService.categorize(transaction.getMerchantName())
-                        .thenAccept(category -> {
-                            transaction.setCategory(Category.valueOf(category));
-                            transactionRepository.save(transaction);
-                        });
+                String category = categorizationService.categorizeSync(transaction.getMerchantName());
+                transaction.setCategory(Category.valueOf(category));
+                transaction.setCategorizedAt(java.time.LocalDateTime.now());
+                transactionRepository.save(transaction);
             });
         });
 
