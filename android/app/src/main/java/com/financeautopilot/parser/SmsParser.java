@@ -44,12 +44,12 @@ public class SmsParser {
 
     private static String detectType(String sms) {
         if (containsAny(sms, "debited", "debit", "paid", "spent", "withdrawn", "withdrawal", "purchase")) {
-            return "DEBIT";
+            return "DEBITED";
         }
         if (containsAny(sms, "credited", "credit", "received", "added", "refund")) {
-            return "CREDIT";
+            return "CREDITED";
         }
-        return "DEBIT";
+        return "DEBITED";
     }
 
     private static String extractMerchant(String sms) {
