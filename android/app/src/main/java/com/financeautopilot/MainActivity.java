@@ -71,7 +71,7 @@ public class MainActivity extends AppCompatActivity {
         if (ContextCompat.checkSelfPermission(this, Manifest.permission.RECEIVE_SMS)
                 != PackageManager.PERMISSION_GRANTED) {
             ActivityCompat.requestPermissions(this,
-                    new String[]{Manifest.permission.RECEIVE_SMS, Manifest.permission.READ_SMS},
+                    new String[]{Manifest.permission.RECEIVE_SMS},
                     SMS_PERMISSION_REQUEST_CODE);
         }
     }
