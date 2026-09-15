@@ -39,28 +39,43 @@ public class SmsReceiver extends BroadcastReceiver {
         }
 
         String format = bundle.getString("format");
+        String sender = null;
+        long timestamp = 0L;
+        StringBuilder bodyBuilder = new StringBuilder();
+
         for (Object pdu : pdus) {
             SmsMessage sms = format == null
                     ? SmsMessage.createFromPdu((byte[]) pdu)
                     : SmsMessage.createFromPdu((byte[]) pdu, format);
             if (sms == null) continue;
 
-            String sender = sms.getOriginatingAddress();
-            String body = sms.getMessageBody();
-            SmsFilter.FilterResult filter = SmsFilter.evaluate(sender, body);
-            if (!filter.allowed) {
-                Log.d(TAG, "discarded: " + filter.reason);
-                continue;
+            if (sender == null) {
+                sender = sms.getOriginatingAddress();
+                timestamp = sms.getTimestampMillis();
             }
 
-            SmsParser.ParsedTransaction parsed = SmsParser.parse(body);
-            if (!parsed.valid) {
-                Log.d(TAG, "parser could not extract transaction");
-                continue;
+            String messagePart = sms.getMessageBody();
+            if (messagePart != null) {
+                bodyBuilder.append(messagePart);
             }
-
-            sendToBackend(context, parsed, body, sms.getTimestampMillis(), tokenManager);
         }
+
+        String body = bodyBuilder.toString();
+        if (sender == null || body.isEmpty()) return;
+
+        SmsFilter.FilterResult filter = SmsFilter.evaluate(sender, body);
+        if (!filter.allowed) {
+            Log.d(TAG, "discarded: " + filter.reason);
+            return;
+        }
+
+        SmsParser.ParsedTransaction parsed = SmsParser.parse(body);
+        if (!parsed.valid) {
+            Log.d(TAG, "parser could not extract transaction");
+            return;
+        }
+
+        sendToBackend(context, parsed, body, timestamp, tokenManager);
     }
 
     private void sendToBackend(Context context, SmsParser.ParsedTransaction parsed,
