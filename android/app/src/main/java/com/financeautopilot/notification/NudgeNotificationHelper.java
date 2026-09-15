@@ -22,6 +22,7 @@ public class NudgeNotificationHelper {
     }
 
     public static void show(Context context, String title, String message) {
+        createChannel(context);
         NotificationManager manager = (NotificationManager)
                 context.getSystemService(Context.NOTIFICATION_SERVICE);
         NotificationCompat.Builder builder = new NotificationCompat.Builder(context, CHANNEL_ID)
