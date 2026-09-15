@@ -2,6 +2,8 @@ package com.financeautopilot.network;
 
 import android.content.Context;
 import android.content.SharedPreferences;
+import androidx.security.crypto.EncryptedSharedPreferences;
+import androidx.security.crypto.MasterKey;
 
 public class TokenManager {
     private static final String PREF_NAME = "pausepay_prefs";
@@ -10,7 +12,20 @@ public class TokenManager {
     private final SharedPreferences prefs;
 
     public TokenManager(Context context) {
-        prefs = context.getSharedPreferences(PREF_NAME, Context.MODE_PRIVATE);
+        try {
+            MasterKey masterKey = new MasterKey.Builder(context)
+                    .setKeyScheme(MasterKey.KeyScheme.AES256_GCM)
+                    .build();
+            prefs = EncryptedSharedPreferences.create(
+                    context,
+                    PREF_NAME,
+                    masterKey,
+                    EncryptedSharedPreferences.PrefKeyEncryptionScheme.AES256_SIV,
+                    EncryptedSharedPreferences.PrefValueEncryptionScheme.AES256_GCM
+            );
+        } catch (Exception e) {
+            throw new IllegalStateException("Failed to initialize secure token storage", e);
+        }
     }
 
     public void saveToken(String token) {
